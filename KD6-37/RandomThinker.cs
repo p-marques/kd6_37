@@ -6,17 +6,17 @@ using System;
 
 namespace KD6_37
 {
-    public class BaseKD637 : AbstractThinker
+    public class RandomThinker : AbstractThinker
     {
-		private List<FutureMove> possibleMoves;
-        private List<FutureMove> nonLosingMoves;
-        private Random random;
+		private List<FutureMove> _possibleMoves;
+        private List<FutureMove> _nonLosingMoves;
+        private Random _random;
 
         public override void Setup(string str)
         {
-            possibleMoves = new List<FutureMove>();
-            nonLosingMoves = new List<FutureMove>();
-            random = new Random();
+            _possibleMoves = new List<FutureMove>();
+            _nonLosingMoves = new List<FutureMove>();
+            _random = new Random();
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
@@ -24,8 +24,8 @@ namespace KD6_37
             Winner winner;
             PColor colorOfOurAI = board.Turn;
 
-            possibleMoves.Clear();
-            nonLosingMoves.Clear();
+            _possibleMoves.Clear();
+            _nonLosingMoves.Clear();
 
             for (int col = 0; col < Cols; col++)
             {
@@ -37,7 +37,7 @@ namespace KD6_37
 
                     if (board.PieceCount(colorOfOurAI, shape) == 0) continue;
 
-                    possibleMoves.Add(new FutureMove(col, shape));
+                    _possibleMoves.Add(new FutureMove(col, shape));
 
                     board.DoMove(shape, col);
 
@@ -52,15 +52,15 @@ namespace KD6_37
                     }
                     else if (winner.ToPColor() != colorOfOurAI.Other())
                     {
-                        nonLosingMoves.Add(new FutureMove(col, shape));
+                        _nonLosingMoves.Add(new FutureMove(col, shape));
                     }
                 }
             }
 
-            if (nonLosingMoves.Count > 0)
-                return nonLosingMoves[random.Next(nonLosingMoves.Count)];
+            if (_nonLosingMoves.Count > 0)
+                return _nonLosingMoves[_random.Next(_nonLosingMoves.Count)];
 
-            return possibleMoves[random.Next(possibleMoves.Count)];
+            return _possibleMoves[_random.Next(_possibleMoves.Count)];
 
         }
     }
