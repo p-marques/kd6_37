@@ -38,7 +38,15 @@ namespace TestKD6_37
             _currentPlayerIndex = 0;
         }
 
-        public void Play()
+        public void Run(int gameCount = 1)
+        {
+            if (gameCount == 1)
+                RunSingleGame();
+            else
+                RunSimulation(gameCount);
+        }
+
+        private void RunSingleGame()
         {
             Console.WriteLine("Starting a new game...");
 
@@ -51,7 +59,7 @@ namespace TestKD6_37
 
             while (watch.ElapsedMilliseconds < MAX_ALLOWED_TIME_IN_MS)
             {
-                PerformPlayerMove(ct);
+                PerformPlayerMove(ct, true);
 
                 ShowBoard();
 
@@ -72,11 +80,68 @@ namespace TestKD6_37
             Console.WriteLine($"\nTest over in {watch.ElapsedMilliseconds}ms");
         }
 
-        private void PerformPlayerMove(CancellationToken ct)
+        private void RunSimulation(int gameCount)
+        {
+            (int white, int red, int draw) = (0, 0, 0);
+
+            Console.WriteLine("Starting games run...");
+
+            for (int i = 0; i < gameCount; i++)
+            {
+                Winner winner = Simulate();
+
+                switch (winner)
+                {
+                    case Winner.Draw:
+                        draw++;
+                        break;
+                    case Winner.White:
+                        white++;
+                        break;
+                    case Winner.Red:
+                        red++;
+                        break;
+                    default:
+                        throw new ArgumentException(
+                            "Unnexpected game over state.");
+                }
+            }
+
+            Console.WriteLine("Results:");
+
+            Console.WriteLine($"\tWhite: {white}");
+            Console.WriteLine($"\tRed: {red}");
+            Console.WriteLine($"\tDraws: {draw}");
+        }
+
+        private Winner Simulate()
+        {
+            Winner result = Winner.None;
+            
+            _board = new Board();
+
+            _currentPlayerIndex = 0;
+
+            CancellationToken ct = new CancellationToken();
+
+            while (result == Winner.None)
+            {
+                PerformPlayerMove(ct);
+
+                SwitchPlayer();
+
+                result = _board.CheckWinner();
+            }
+
+            return result;
+        }
+
+        private void PerformPlayerMove(CancellationToken ct, bool print = false)
         {
             FutureMove move = CurrentPlayer.Thinker.Think(_board, ct);
 
-            Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}");
+            if (print)
+                Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}");
 
             _board.DoMove(move.shape, move.column);
         }
