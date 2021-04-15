@@ -23,13 +23,12 @@ namespace TestKD6_37
                 return;
             }
 
-            string whitesName = typeof(RandomThinker).FullName;
-            string redsName = typeof(MinimaxAIThinker).FullName;
+            string whitesName = typeof(MinimaxAIThinker).FullName;
+            string redsName = typeof(KD6_37Thinker).FullName; 
 
             Game game = new Game(whitesName, redsName);
 
             game.Run(runCount);
-                
         }
     }
 }

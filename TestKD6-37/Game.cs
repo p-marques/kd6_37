@@ -9,8 +9,6 @@ namespace TestKD6_37
 {
     internal class Game
     {
-        private const int MAX_ALLOWED_TIME_IN_MS = 10000;
-
         private MatchConfig _matchConfig;
         private Board _board;
         private Player[] _players;
@@ -57,11 +55,21 @@ namespace TestKD6_37
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
-            while (watch.ElapsedMilliseconds < MAX_ALLOWED_TIME_IN_MS)
+            while (true)
             {
                 PerformPlayerMove(ct, true);
 
                 ShowBoard();
+
+                //ConsoleKeyInfo input;
+
+                //while (true)
+                //{
+                //    input = Console.ReadKey();
+
+                //    if (input.Key == ConsoleKey.Enter)
+                //        break;
+                //}
 
                 SwitchPlayer();
 
@@ -138,10 +146,15 @@ namespace TestKD6_37
 
         private void PerformPlayerMove(CancellationToken ct, bool print = false)
         {
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
+
             FutureMove move = CurrentPlayer.Thinker.Think(_board, ct);
 
+            watch.Stop();
+
             if (print)
-                Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}");
+                Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}. Took {watch.ElapsedMilliseconds}ms");
 
             _board.DoMove(move.shape, move.column);
         }
