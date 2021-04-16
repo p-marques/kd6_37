@@ -1,6 +1,7 @@
 ﻿using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
 using ColorShapeLinks.Common.Session;
+using KD6_37;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -60,16 +61,6 @@ namespace TestKD6_37
                 PerformPlayerMove(ct, true);
 
                 ShowBoard();
-
-                //ConsoleKeyInfo input;
-
-                //while (true)
-                //{
-                //    input = Console.ReadKey();
-
-                //    if (input.Key == ConsoleKey.Enter)
-                //        break;
-                //}
 
                 SwitchPlayer();
 
@@ -154,7 +145,16 @@ namespace TestKD6_37
             watch.Stop();
 
             if (print)
-                Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}. Took {watch.ElapsedMilliseconds}ms");
+            {
+                Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}. Took {watch.ElapsedMilliseconds}ms.");
+
+                if (CurrentPlayer.Thinker is KD6_37MCTSThinker)
+                {
+                    KD6_37MCTSThinker kD6_37 = CurrentPlayer.Thinker as KD6_37MCTSThinker;
+
+                    Console.WriteLine($"-> Simulations: {kD6_37.LastRunSimulations}; k = {kD6_37.K}; c = {kD6_37.C}");
+                }
+            }
 
             _board.DoMove(move.shape, move.column);
         }

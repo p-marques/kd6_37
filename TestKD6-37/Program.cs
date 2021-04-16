@@ -24,7 +24,7 @@ namespace TestKD6_37
             }
 
             string whitesName = typeof(MinimaxAIThinker).FullName;
-            string redsName = typeof(KD6_37Thinker).FullName; 
+            string redsName = typeof(KD6_37MCTSThinker).FullName; 
 
             Game game = new Game(whitesName, redsName);
 
