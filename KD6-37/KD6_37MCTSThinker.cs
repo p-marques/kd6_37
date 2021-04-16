@@ -8,9 +8,6 @@ namespace KD6_37
 {
     public class KD6_37MCTSThinker : AbstractThinker
     {
-        // Default time available to think
-        private const float DEFAULT_TIME_TO_THINK = 0.2f;
-
         // Default % of time to think can actually be used
         private const float DEFAULT_USED_TIME_TO_THINK_PERCENTAGE = 0.98f;
 
@@ -30,15 +27,8 @@ namespace KD6_37
 
         public override void Setup(string str)
         {
-            if (float.TryParse(str, out float value) && value > 0f)
-            {
-                _timeToThink = value * DEFAULT_USED_TIME_TO_THINK_PERCENTAGE;
-            }
-            else
-            {
-                _timeToThink = DEFAULT_TIME_TO_THINK *
+            _timeToThink = TimeLimitMillis *
                     DEFAULT_USED_TIME_TO_THINK_PERCENTAGE;
-            }
 
             _k = (2 / (float)Math.Sqrt(2));
             _c = 0.1f;
@@ -50,7 +40,7 @@ namespace KD6_37
         {
             DateTime startTime = DateTime.Now;
 
-            DateTime deadline = startTime + TimeSpan.FromSeconds(_timeToThink);
+            DateTime deadline = startTime + TimeSpan.FromMilliseconds(_timeToThink);
 
             KD6_37MCSTNode root = new KD6_37MCSTNode(board, FutureMove.NoMove);
 
