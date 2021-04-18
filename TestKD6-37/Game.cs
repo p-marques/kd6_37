@@ -31,7 +31,7 @@ namespace TestKD6_37
 
             _players[0] = new Player(tp.Create(), whitesName);
 
-            tp = new ThinkerPrototype(redsName, "1.11", _matchConfig);
+            tp = new ThinkerPrototype(redsName, "0.75", _matchConfig);
 
             _players[1] = new Player(tp.Create(), redsName);
 
@@ -49,7 +49,7 @@ namespace TestKD6_37
 
         private void RunSingleGame()
         {
-            List<int> simulationsPerThink = new List<int>();
+            int totalSimulations = 0;
             Console.WriteLine("Starting a new game...");
 
             ShowBoard();
@@ -63,7 +63,7 @@ namespace TestKD6_37
             {
                 PerformPlayerMove(ct, out int simulations, true);
 
-                simulationsPerThink.Add(simulations);
+                totalSimulations += simulations;
 
                 ShowBoard();
 
@@ -81,8 +81,7 @@ namespace TestKD6_37
                 break;
             }
 
-            int avg = (int)Enumerable.Average(simulationsPerThink);
-            Console.WriteLine($"Average simulations: {avg}");
+            Console.WriteLine($"Simulations: {totalSimulations}");
         }
 
         private void RunSimulation(int gameCount)
