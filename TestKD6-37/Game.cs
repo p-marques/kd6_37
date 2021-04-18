@@ -3,7 +3,9 @@ using ColorShapeLinks.Common.AI;
 using ColorShapeLinks.Common.Session;
 using KD6_37;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace TestKD6_37
@@ -29,7 +31,7 @@ namespace TestKD6_37
 
             _players[0] = new Player(tp.Create(), whitesName);
 
-            tp = new ThinkerPrototype(redsName, "", _matchConfig);
+            tp = new ThinkerPrototype(redsName, "1.11", _matchConfig);
 
             _players[1] = new Player(tp.Create(), redsName);
 
@@ -47,6 +49,7 @@ namespace TestKD6_37
 
         private void RunSingleGame()
         {
+            List<int> simulationsPerThink = new List<int>();
             Console.WriteLine("Starting a new game...");
 
             ShowBoard();
@@ -58,7 +61,9 @@ namespace TestKD6_37
 
             while (true)
             {
-                PerformPlayerMove(ct, true);
+                PerformPlayerMove(ct, out int simulations, true);
+
+                simulationsPerThink.Add(simulations);
 
                 ShowBoard();
 
@@ -76,7 +81,8 @@ namespace TestKD6_37
                 break;
             }
 
-            Console.WriteLine($"\nTest over in {watch.ElapsedMilliseconds}ms");
+            int avg = (int)Enumerable.Average(simulationsPerThink);
+            Console.WriteLine($"Average simulations: {avg}");
         }
 
         private void RunSimulation(int gameCount)
@@ -125,7 +131,7 @@ namespace TestKD6_37
 
             while (result == Winner.None)
             {
-                PerformPlayerMove(ct);
+                PerformPlayerMove(ct, out int simulations);
 
                 SwitchPlayer();
 
@@ -135,8 +141,9 @@ namespace TestKD6_37
             return result;
         }
 
-        private void PerformPlayerMove(CancellationToken ct, bool print = false)
+        private void PerformPlayerMove(CancellationToken ct, out int simulations, bool print = false)
         {
+            simulations = 0;
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
@@ -152,7 +159,9 @@ namespace TestKD6_37
                 {
                     KD6_37MCTSThinker kD6_37 = CurrentPlayer.Thinker as KD6_37MCTSThinker;
 
-                    Console.WriteLine($"-> Simulations: {kD6_37.LastRunSimulations}; k = {kD6_37.K}; c = {kD6_37.C}");
+                    Console.WriteLine($"-> Simulations: {kD6_37.LastRunSimulations}; k = {kD6_37.K};");
+
+                    simulations = kD6_37.LastRunSimulations;
                 }
             }
 

@@ -2,12 +2,16 @@
 using ColorShapeLinks.Common.AI;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 
 namespace KD6_37
 {
     public class KD6_37MCTSThinker : AbstractThinker
     {
+        // Default K
+        private const float DEFAULT_K = 1.41f;
+
         // Default % of time to think can actually be used
         private const float DEFAULT_USED_TIME_TO_THINK_PERCENTAGE = 0.98f;
 
@@ -17,21 +21,27 @@ namespace KD6_37
 
         private float _k;
 
-        private float _c;
-
         public int LastRunSimulations { get; private set; }
 
         public float K => _k;
 
-        public float C => _c;
-
-        public override void Setup(string str)
+        public override void Setup(string arguments)
         {
             _timeToThink = TimeLimitMillis *
                     DEFAULT_USED_TIME_TO_THINK_PERCENTAGE;
 
-            _k = (2 / (float)Math.Sqrt(2));
-            _c = 0.1f;
+            _k = DEFAULT_K;
+
+            if (!string.IsNullOrEmpty(arguments))
+            {
+                if (float.TryParse(arguments, NumberStyles.Float, 
+                    CultureInfo.InvariantCulture, out float inK))
+                {
+                    _k = inK;
+                }
+                else
+                    throw new ArgumentException("KD6_37 error: bad arguments.");
+            }
 
             _random = new Random();
         }
@@ -53,7 +63,7 @@ namespace KD6_37
                 MCTS(root);
             }
 
-            selectedNode = SelectMovePolicy(root, 0, 0);
+            selectedNode = SelectMovePolicy(root, 0);
 
             LastRunSimulations += selectedNode.Playouts;
 
@@ -74,7 +84,7 @@ namespace KD6_37
             {
                 if (current.IsFullyExpanded)
                 {
-                    current = SelectMovePolicy(current, _k, _c);
+                    current = SelectMovePolicy(current, _k);
                 }
                 else
                 {
@@ -104,7 +114,7 @@ namespace KD6_37
             }
         }
 
-        private KD6_37MCSTNode SelectMovePolicy(KD6_37MCSTNode node, float k, float c)
+        private KD6_37MCSTNode SelectMovePolicy(KD6_37MCSTNode node, float k)
         {
             KD6_37MCSTNode bestChildNode = null;
             float bestUCT = float.NegativeInfinity;
@@ -116,8 +126,7 @@ namespace KD6_37
                 KD6_37MCSTNode childNode = node.Children[i];
 
                 float uct = childNode.Wins / (float)childNode.Playouts
-                    + k * (float)Math.Sqrt(lnN / childNode.Playouts)
-                    + c * GetBoardValue(childNode.Board, node.Turn);
+                    + k * (float)Math.Sqrt(lnN / childNode.Playouts);
 
                 if (uct > bestUCT)
                 {
@@ -143,43 +152,6 @@ namespace KD6_37
             return availableMoves[_random.Next(availableMoves.Count)];
         }
 
-        private float GetBoardValue(Board board, PColor turn)
-        {
-            float Dist(float x1, float y1, float x2, float y2)
-            {
-                return (float)Math.Sqrt(
-                    Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
-            }
-
-            float centerColumn = board.cols / 2f;
-            float centerRow = board.rows / 2;
-
-            float maxScoreCenterCenter = Dist(centerRow, centerColumn, 0, 0);
-
-            float score = 0;
-
-            for (int i = 0; i < board.rows; i++)
-            {
-                for (int j = 0; j < board.cols; j++)
-                {
-                    Piece? piece = board[i, j];
-
-                    if (!piece.HasValue) continue;
-
-                    if (piece.Value.color == turn || piece.Value.shape == turn.Shape())
-                    {
-                        score += maxScoreCenterCenter - Dist(centerRow, centerColumn, i, j);
-                    }
-                    else
-                    {
-                        score -= maxScoreCenterCenter - Dist(centerRow, centerColumn, i, j);
-                    }
-                }
-            }
-
-            return score;
-        }
-
-        public override string ToString() => "G08KD6-3.7V2";
+        public override string ToString() => "G08_KD6-3.7_V2";
     }
 }
