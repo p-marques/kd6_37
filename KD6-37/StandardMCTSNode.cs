@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace KD6_37
 {
-    public class KD6_37MCSTNode
+    public class StandardMCTSNode
     {
-        private readonly Board _board;
+        private Board _board;
 
         private IList<FutureMove> _validMoves;
 
@@ -31,7 +31,7 @@ namespace KD6_37
                 {
                     _validMoves = DiscernValidMoves(_board);
                 }
-                
+
                 return _validMoves;
             }
         }
@@ -53,26 +53,24 @@ namespace KD6_37
 
         public int Playouts { get; set; }
 
-        public IList<KD6_37MCSTNode> Children { get; }
+        public IList<StandardMCTSNode> Children { get; }
 
-        public KD6_37MCSTNode(Board board, FutureMove move)
+        public StandardMCTSNode(Board board, FutureMove move)
         {
             _board = board;
 
             Move = move;
 
-            Children = new List<KD6_37MCSTNode>();
+            Children = new List<StandardMCTSNode>();
         }
 
-        public KD6_37MCSTNode MakeMove(FutureMove move, Func<Board, FutureMove, KD6_37MCSTNode> getNode)
+        public StandardMCTSNode MakeMove(FutureMove move)
         {
             Board newBoard = _board.Copy();
 
             newBoard.DoMove(move.shape, move.column);
 
-            KD6_37MCSTNode child = getNode(newBoard, move);
-
-            //KD6_37MCSTNode child = new KD6_37MCSTNode(newBoard, move);
+            StandardMCTSNode child = new StandardMCTSNode(newBoard, move);
 
             Children.Add(child);
 

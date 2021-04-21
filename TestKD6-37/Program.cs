@@ -1,5 +1,4 @@
-﻿using ColorShapeLinks.Common.AI.Examples;
-using KD6_37;
+﻿using KD6_37;
 using System;
 
 namespace TestKD6_37
@@ -23,9 +22,8 @@ namespace TestKD6_37
                 return;
             }
 
-            string whitesName = typeof(MinimaxAIThinker).FullName;
-            string redsName = typeof(KD6_37MCTSThinker).FullName; 
-
+            string whitesName = typeof(StandardMCTS).FullName;
+            string redsName = typeof(KD6_37MCTSThinker).FullName;
             Game game = new Game(whitesName, redsName);
 
             game.Run(runCount);

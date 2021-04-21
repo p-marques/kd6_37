@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace KD6_37
 {
-    public class KD6_37MCTSThinker : AbstractThinker
+    public class StandardMCTS : AbstractThinker
     {
         // Default K
         private const float DEFAULT_K = 1.41f;
@@ -20,16 +20,6 @@ namespace KD6_37
         private float _timeToThink;
 
         private float _k;
-
-        private ZobristHashing _hashing;
-
-        private Dictionary<long, KD6_37MCSTNode> _cachedNodes;
-
-        public Dictionary<long, KD6_37MCSTNode> CachedNodes => _cachedNodes;
-
-        public int ChachedNodesCount => _cachedNodes.Count;
-
-        public int NodeReuses { get; private set; }
 
         public int LastRunSimulations { get; private set; }
 
@@ -44,7 +34,7 @@ namespace KD6_37
 
             if (!string.IsNullOrEmpty(arguments))
             {
-                if (float.TryParse(arguments, NumberStyles.Float, 
+                if (float.TryParse(arguments, NumberStyles.Float,
                     CultureInfo.InvariantCulture, out float inK))
                 {
                     _k = inK;
@@ -54,15 +44,6 @@ namespace KD6_37
             }
 
             _random = new Random();
-
-            _cachedNodes = new Dictionary<long, KD6_37MCSTNode>();
-
-            NodeReuses = 0;
-        }
-
-        public void ResetCachedNodes()
-        {
-            _cachedNodes = new Dictionary<long, KD6_37MCSTNode>();
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
@@ -71,16 +52,9 @@ namespace KD6_37
 
             DateTime deadline = startTime + TimeSpan.FromMilliseconds(_timeToThink);
 
-            if (_hashing == null)
-            {
-                _hashing = new ZobristHashing(board);
-            }
+            StandardMCTSNode root = new StandardMCTSNode(board, FutureMove.NoMove);
 
-            KD6_37MCSTNode root = GetNodeFromBoard(board, FutureMove.NoMove);
-
-            // KD6_37MCSTNode root = new KD6_37MCSTNode(board, FutureMove.NoMove);
-
-            KD6_37MCSTNode selectedNode;
+            StandardMCTSNode selectedNode;
 
             LastRunSimulations = 0;
 
@@ -96,13 +70,13 @@ namespace KD6_37
             return selectedNode.Move;
         }
 
-        private void MCTS(KD6_37MCSTNode root)
+        private void MCTS(StandardMCTSNode root)
         {
-            KD6_37MCSTNode current = root;
+            StandardMCTSNode current = root;
 
             bool selected = false;
 
-            Stack<KD6_37MCSTNode> moveSequence = new Stack<KD6_37MCSTNode>();
+            Stack<StandardMCTSNode> moveSequence = new Stack<StandardMCTSNode>();
 
             moveSequence.Push(current);
 
@@ -125,7 +99,7 @@ namespace KD6_37
 
             while (moveSequence.Count > 0)
             {
-                KD6_37MCSTNode node = moveSequence.Pop();
+                StandardMCTSNode node = moveSequence.Pop();
 
                 node.Playouts++;
 
@@ -140,16 +114,16 @@ namespace KD6_37
             }
         }
 
-        private KD6_37MCSTNode SelectMovePolicy(KD6_37MCSTNode node, float k)
+        private StandardMCTSNode SelectMovePolicy(StandardMCTSNode node, float k)
         {
-            KD6_37MCSTNode bestChildNode = null;
+            StandardMCTSNode bestChildNode = null;
             float bestUCT = float.NegativeInfinity;
 
             float lnN = (float)Math.Log(node.Playouts);
 
             for (int i = 0; i < node.Children.Count; i++)
             {
-                KD6_37MCSTNode childNode = node.Children[i];
+                StandardMCTSNode childNode = node.Children[i];
 
                 float uct = childNode.Wins / (float)childNode.Playouts
                     + k * (float)Math.Sqrt(lnN / childNode.Playouts);
@@ -164,38 +138,18 @@ namespace KD6_37
             return bestChildNode;
         }
 
-        private KD6_37MCSTNode ExpandPolicy(KD6_37MCSTNode node)
+        private StandardMCTSNode ExpandPolicy(StandardMCTSNode node)
         {
             IReadOnlyList<FutureMove> untriedMoves = node.UntriedMoves;
 
             FutureMove move = untriedMoves[_random.Next(untriedMoves.Count)];
 
-            return node.MakeMove(move, GetNodeFromBoard);
+            return node.MakeMove(move);
         }
 
         private FutureMove PlayoutPolicy(IList<FutureMove> availableMoves)
         {
             return availableMoves[_random.Next(availableMoves.Count)];
-        }
-
-        private KD6_37MCSTNode GetNodeFromBoard(Board board, FutureMove move)
-        {
-            long hash = _hashing.Hash(board);
-            KD6_37MCSTNode node;
-
-            if (_cachedNodes.ContainsKey(hash))
-            {
-                node = _cachedNodes[hash];
-
-                NodeReuses++;
-            }
-            else
-            {
-                node = new KD6_37MCSTNode(board, move);
-                _cachedNodes[hash] = node;
-            }
-
-            return node;
         }
 
         public override string ToString() => "G08_KD6-3.7_V2";

@@ -5,7 +5,6 @@ using KD6_37;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 
 namespace TestKD6_37
@@ -25,7 +24,7 @@ namespace TestKD6_37
 
             _board = new Board();
 
-            ThinkerPrototype tp = new ThinkerPrototype(whitesName, "", _matchConfig);
+            ThinkerPrototype tp = new ThinkerPrototype(whitesName, "0.75", _matchConfig);
 
             _players = new Player[2];
 
@@ -61,7 +60,7 @@ namespace TestKD6_37
 
             while (true)
             {
-                PerformPlayerMove(ct, out int simulations, true);
+                PerformPlayerMove(ct, out int simulations, out int nodeReuses, true);
 
                 totalSimulations += simulations;
 
@@ -82,10 +81,15 @@ namespace TestKD6_37
             }
 
             Console.WriteLine($"Simulations: {totalSimulations}");
+
+            bool check = GetAreCachedNodesValid((_players[1].Thinker as KD6_37MCTSThinker).CachedNodes);
+
+            Console.WriteLine($"Valid? {check}");
         }
 
         private void RunSimulation(int gameCount)
         {
+            int count = 0;
             (int white, int red, int draw) = (0, 0, 0);
 
             Console.WriteLine("Starting games run...");
@@ -93,6 +97,8 @@ namespace TestKD6_37
             for (int i = 0; i < gameCount; i++)
             {
                 Winner winner = Simulate();
+
+                count++;
 
                 switch (winner)
                 {
@@ -109,6 +115,8 @@ namespace TestKD6_37
                         throw new ArgumentException(
                             "Unnexpected game over state.");
                 }
+
+                Console.WriteLine($"Record: {red}/{count}");
             }
 
             Console.WriteLine("Results:");
@@ -120,9 +128,16 @@ namespace TestKD6_37
 
         private Winner Simulate()
         {
+            int totalSimulationsWhite = 0;
+            int totalSimulationsRed = 0;
+            int totalNodeReuses = 0;
+
             Winner result = Winner.None;
             
             _board = new Board();
+
+            // Need to reset cached nodes, otherwise it would become better as simulations went along
+            (_players[1].Thinker as KD6_37MCTSThinker).ResetCachedNodes();
 
             _currentPlayerIndex = 0;
 
@@ -130,19 +145,33 @@ namespace TestKD6_37
 
             while (result == Winner.None)
             {
-                PerformPlayerMove(ct, out int simulations);
+                PerformPlayerMove(ct, out int simulations, out int nodeReuses);
+
+                if (_currentPlayerIndex == 0)
+                {
+                    totalSimulationsWhite += simulations;
+                }
+                else
+                {
+                    totalSimulationsRed += simulations;
+                }
+
+                totalNodeReuses += nodeReuses;
 
                 SwitchPlayer();
 
                 result = _board.CheckWinner();
             }
 
+            Console.WriteLine($"-> Simulations: {totalSimulationsWhite} vs {totalSimulationsRed}; Node reuses: {totalNodeReuses}; Winner: {result}");
+
             return result;
         }
 
-        private void PerformPlayerMove(CancellationToken ct, out int simulations, bool print = false)
+        private void PerformPlayerMove(CancellationToken ct, out int simulations, out int nodeReuses, bool print = false)
         {
             simulations = 0;
+            nodeReuses = 0;
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
@@ -150,18 +179,30 @@ namespace TestKD6_37
 
             watch.Stop();
 
+            KD6_37MCTSThinker kD6_37 = null;
+            if (CurrentPlayer.Thinker is KD6_37MCTSThinker)
+            {
+                kD6_37 = CurrentPlayer.Thinker as KD6_37MCTSThinker;
+
+                nodeReuses = kD6_37.NodeReuses;
+
+                simulations = kD6_37.LastRunSimulations;
+            }
+
+            StandardMCTS sMCTS = null;
+            if (CurrentPlayer.Thinker is StandardMCTS)
+            {
+                sMCTS = CurrentPlayer.Thinker as StandardMCTS;
+
+                simulations = sMCTS.LastRunSimulations;
+            }
+
             if (print)
             {
                 Console.WriteLine($"-> {CurrentPlayer.Name} plays: {move}. Took {watch.ElapsedMilliseconds}ms.");
 
-                if (CurrentPlayer.Thinker is KD6_37MCTSThinker)
-                {
-                    KD6_37MCTSThinker kD6_37 = CurrentPlayer.Thinker as KD6_37MCTSThinker;
-
-                    Console.WriteLine($"-> Simulations: {kD6_37.LastRunSimulations}; k = {kD6_37.K};");
-
-                    simulations = kD6_37.LastRunSimulations;
-                }
+                if (kD6_37 != null)
+                    Console.WriteLine($"-> Simulations: {kD6_37.LastRunSimulations}; k = {kD6_37.K}; Cached nodes: {kD6_37.ChachedNodesCount}; Reuses: {kD6_37.NodeReuses}");
             }
 
             _board.DoMove(move.shape, move.column);
@@ -208,6 +249,48 @@ namespace TestKD6_37
                 Console.WriteLine();
             }
             Console.WriteLine();
+        }
+
+        private bool GetAreCachedNodesValid(Dictionary<long, KD6_37MCSTNode> nodes)
+        {
+            foreach (KeyValuePair<long, KD6_37MCSTNode> nodeA in nodes)
+            {
+                foreach (KeyValuePair<long, KD6_37MCSTNode> nodeB in nodes)
+                {
+                    if (nodeA.Key == nodeB.Key)
+                    {
+                        if (!nodeA.Value.Board.IsEqual(nodeB.Value.Board))
+                        {
+                            Console.WriteLine("Found different boards with same hash!!!");
+
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (nodeA.Value.Board.IsEqual(nodeB.Value.Board))
+                        {
+                            Console.WriteLine("Found 2 equal boards with different hash!!!");
+
+                            Console.WriteLine();
+
+                            _board = nodeA.Value.Board;
+
+                            ShowBoard();
+
+                            _board = nodeB.Value.Board;
+
+                            ShowBoard();
+
+                            Console.WriteLine();
+
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }

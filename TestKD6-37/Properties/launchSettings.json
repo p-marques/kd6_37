@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TestKD6-37": {
+      "commandName": "Project",
+      "commandLineArgs": "100"
+    }
+  }
+}
